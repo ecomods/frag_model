@@ -237,7 +237,7 @@ if (to_log) {
   log_entry(
     meta = meta,
     job_id = job_id, 
-    scenario_key = scenario, 
+    scenario = scenario, 
     replicate_num = replicate_num,
     project_version = "2.0",
     status = "complete",
