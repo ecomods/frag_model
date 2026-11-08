@@ -202,7 +202,7 @@ for (i in seq_len(n_sims)) {
     log_entry(
       meta = meta,
       job_id = "local", 
-      scenario_key = scenario, 
+      scenario = scenario, 
       replicate_num = replicate_num,
       project_version = "2.0",
       status = "complete",

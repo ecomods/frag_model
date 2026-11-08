@@ -46,7 +46,7 @@ run_model_step <- function(
     edge_cells = cells$edges,
     species_specific = species_specific,
     death_rate = if (species_specific) NULL else mod_par$death_rate,
-    edge_factor = if (species_specific) NULL else var_par$edge_factor
+    edge_factor = if (species_specific) NULL else var_par$edge
   )
 
   # Immigration

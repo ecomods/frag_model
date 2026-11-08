@@ -6,7 +6,7 @@
 # landscape grid (grid), agents list (agents) and a data frame with aggregated
 # species abundances for each site (ss_abund).
 
-clean_run <- function(
+single_run <- function(
   mod_par,
   var_par,
   species_par,
