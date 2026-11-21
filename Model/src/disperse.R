@@ -38,8 +38,12 @@ toroidal_disperse <- function(
   d_sd,
   d_mean,
   grid_size,
-  kernel = c("exponential", "log-normal")
+  kernel = c("exponential", "log-normal"),
+  seed = NULL
 ) {
+
+  if (!is.null(seed)) withr::local_seed(seed)
+  
   start.time <- Sys.time()
 
   kernel <- match.arg(kernel)
@@ -84,9 +88,7 @@ random_disperse <- function(
   seed = NULL
 ) {
 
-  if (!is.null(seed)) {
-    set.seed(seed)
-  }
+  if (!is.null(seed)) withr::local_seed(seed)
 
   if (force_habitat && is.null(grid) && is.null(habitat_cells)) {
     stop("Either a grid or habitat_cells must be provided when force_habitat is TRUE.")

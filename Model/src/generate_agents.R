@@ -7,8 +7,9 @@ generate_agents <- function(
   n_species,
   n_pop,
   # grid,
-  seed = NULL
+  seed
 ) {
+
   # mean_grid <- mean(grid@data@values[!is.na(grid@data@values)])
   # sd_grid <- sd(grid@data@values[!is.na(grid@data@values)] + 0.05)
 
@@ -17,7 +18,7 @@ generate_agents <- function(
   # n_values <- runif(n = species, min = 0, max = 1) # Generate a vector of possible N values according to number of species
   # n_values <- rnorm(n_species, mean_grid, sd_grid)
 
-  # create data frame and populating it
+  # create data frame and populate it
   withr::with_seed(seed, {
     agents_df <- data.table(
       ID = 1:n_pop,

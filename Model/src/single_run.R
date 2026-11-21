@@ -12,23 +12,12 @@ single_run <- function(
   species_par,
   switch,
   sim_id,
-  record_steps = c("start", "pre_fragmentation", "post_fragmentation", "final"),
-  seed = NULL
+  seeds,
+  record_steps = c("start", "pre_fragmentation", "post_fragmentation", "final")
 ) {
 
   force(sim_id)
-
-  # If seed is provided explicitly, use it. Otherwise, check if a master seed was sourced.
-  # If neither is provided, generate a random master seed and set it.
-  if (!is.null(seed)) {
-    set.seed(seed)
-    master_seed <- seed
-  } else if (exists("master_seed", envir = .GlobalEnv)) {
-    set.seed(master_seed)
-  } else {
-    master_seed <- round(runif(1, 0, 1e6))
-    set.seed(master_seed)
-  }
+  force(seeds)
   
   # Check if species specific parameters are enabled
   species_specific <- isFALSE(switch$species_specific_par == 0)
@@ -49,7 +38,7 @@ single_run <- function(
   meta <- build_meta(
     sim_id = sim_id,
     run_date = Sys.Date(),
-    master_seed = master_seed,
+    seeds = seeds,
     grid_size = mod_par$grid_size,
     ac_amount = var_par$ac,
     habitat = 1,
@@ -69,11 +58,6 @@ single_run <- function(
   steps_1 <- mod_par$steps_pre_frag
   steps_2 <- mod_par$steps_post_frag
 
-  # Set seeds for different processes based on switches
-  seed_landscape <- if (switch$random_landscape == 1) master_seed + 1 else NULL
-  seed_distribution <- if (switch$random_community == 1) master_seed + 2 else NULL
-  seed_fragment <- if (switch$random_post_frag == 1) master_seed + 3 else NULL
-
   # Initialize model with 100% habitat
   model_start <- initialize(
     grid_size = mod_par$grid_size,
@@ -85,9 +69,7 @@ single_run <- function(
     k_intra = mod_par$k_intra,
     niche_breadth = var_par$nb,
     species_specific = species_specific,
-    master_seed = master_seed,
-    seed_landscape = seed_landscape,
-    seed_distribution = seed_distribution
+    seeds = seeds
   )
 
   # Storage for recorded states
@@ -106,30 +88,33 @@ single_run <- function(
 
   model_state <- model_start
 
-  for (i in seq_len(steps_1)) {
-    start.time <- Sys.time()
+  withr::with_seed(seeds$spin_up, {
 
-    if (nrow(model_state$agents) > 0) {
-      # Run a full model step and update state
-      step_out <- run_model_step(
-        model_state = model_state,
-        mod_par = mod_par,
-        var_par = var_par,
-        species_par = species_par,
-        switch = switch
-      )
-      model_state <- step_out
-    } else {
-      message("ALL DEAD before fragmentation")
-      break
+    for (i in seq_len(steps_1)) {
+      start.time <- Sys.time()
+  
+      if (nrow(model_state$agents) > 0) {
+        # Run a full model step and update state
+        step_out <- run_model_step(
+          model_state = model_state,
+          mod_par = mod_par,
+          var_par = var_par,
+          species_par = species_par,
+          switch = switch
+        )
+        model_state <- step_out
+      } else {
+        message("ALL DEAD before fragmentation")
+        break
+      }
+  
+      end.time <- Sys.time()
+      time.taken <- round(end.time - start.time, 2)
+      if (switch$print_agents == 1) {
+        cat("step", model_state$step, "took", time.taken, "with", nrow(model_state$agents), "agents\n")
+      }
     }
-
-    end.time <- Sys.time()
-    time.taken <- round(end.time - start.time, 2)
-    if (switch$print_agents == 1) {
-      cat("step", model_state$step, "took", time.taken, "with", nrow(model_state$agents), "agents\n")
-    }
-  }
+  })
 
   full_state <- record_state(
     model_state = model_state,
@@ -148,7 +133,7 @@ single_run <- function(
     full_state = full_state,
     habitat = var_par$hab,
     fragmentation = var_par$frag,
-    seed = seed_fragment
+    seed = seeds$fragmentation
   )
 
   if (switch$print_agents == 1) {
@@ -168,30 +153,32 @@ single_run <- function(
 
   model_state <- frag_out
 
-  for (j in seq_len(steps_2)) {
-    start.time <- Sys.time()
+  withr::with_seed(seeds$post_frag, {
+    for (j in seq_len(steps_2)) {
+      start.time <- Sys.time()
 
-    if (nrow(model_state$agents) > 0) {
-      # Run a full model step and update agents list and grid
-      step_out <- run_model_step(
-        model_state = model_state,
-        mod_par = mod_par,
-        var_par = var_par,
-        species_par = species_par,
-        switch = switch
-      )
-      model_state <- step_out
-    } else {
-      message("ALL DEAD after fragmentation")
-      break
-    }
+      if (nrow(model_state$agents) > 0) {
+        # Run a full model step and update agents list and grid
+        step_out <- run_model_step(
+          model_state = model_state,
+          mod_par = mod_par,
+          var_par = var_par,
+          species_par = species_par,
+          switch = switch
+        )
+        model_state <- step_out
+      } else {
+        message("ALL DEAD after fragmentation")
+        break
+      }
 
-    end.time <- Sys.time()
-    time.taken <- round(end.time - start.time, 2)
-    if (switch$print_agents == 1) {
-      cat("step", model_state$step, "took", time.taken, "with", nrow(model_state$agents), "agents\n")
+      end.time <- Sys.time()
+      time.taken <- round(end.time - start.time, 2)
+      if (switch$print_agents == 1) {
+        cat("step", model_state$step, "took", time.taken, "with", nrow(model_state$agents), "agents\n")
+      }
     }
-  }
+  }) 
 
   # Record final state
   if ("final" %in% record_steps) {

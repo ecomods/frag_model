@@ -14,6 +14,7 @@ library(scales)
 
 # Model source files
 source(here("Model/parameters.R"))
+source(here("Model/src/seeds.R"))
 source(here("Model/src/single_run.R"))
 source(here("Model/src/initialize.R"))
 source(here("Model/src/landscape.R"))
@@ -72,6 +73,11 @@ to_log <- FALSE
 # All simulations relevant for analyses should be logged!
 # Set to_log = FALSE only for testing and debugging purposes!
 
+# Set base project seed. 
+# Make sure to change this seed for each new project, 
+# to ensure reproducibility and avoid overlapping random number sequences across different projects.
+project_seed <- 123L
+
 # Loop -------------------------------------------------------------
 
 # Assess the number of simulations to run based on the parameter grid (var_par)
@@ -91,10 +97,9 @@ for (i in seq_len(n_sims)) {
     sim_id <- i
   }
 
-  # A single master seed is set in parameters.R.
-  # If we want to have different seeds for each simulation, 
-  # we need to increment the master_seed for each simulation.
-  current_seed <- master_seed + i - 1
+  # To ensure a different seed for each simulation, the base project seed gets incremented by the sim_id. 
+  origin_seed <- project_seed + sim_id
+  seeds <- derive_seeds(origin = origin_seed)
 
   # Extract parameters for this simulation
   cur_var_par <- var_par[i, ]
@@ -117,7 +122,7 @@ for (i in seq_len(n_sims)) {
     species_par = species_par,
     switch = switch,
     sim_id = sim_id,
-    seed = current_seed,
+    seeds = seeds,
     record_steps = steps_to_record
   )
 
@@ -164,7 +169,8 @@ for (i in seq_len(n_sims)) {
         results[[step]],
         method = sampling_methods[[method]],
         n_samples = 30, # remember to specify if using random sampling
-        format = "long"
+        format = "long",
+        seed = seeds$sampling
       )
     }
   
@@ -204,7 +210,8 @@ for (i in seq_len(n_sims)) {
       job_id = "local", 
       scenario = scenario, 
       replicate_num = replicate_num,
-      project_version = "2.0",
+      project_version = "3.0",
+      seeds = seeds,
       status = "complete",
       state_file = state_file,
       sampled_files = sampled_files

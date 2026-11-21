@@ -98,8 +98,14 @@ subsample_cells <- function(data, n_samples = 30, steps = c("post_fragmentation"
     )
   }
 
-  if (!is.null(seed)) set.seed(seed)
-  drawn <- sample(shared_cells, n_samples)
+  if (!is.null(seed)) {
+    withr::with_seed(
+      seed,
+      drawn <- sample(shared_cells, n_samples)
+    )
+  } else {
+    drawn <- sample(shared_cells, n_samples)
+  }
 
   data %>%
     dplyr::filter(cell_id %in% drawn)

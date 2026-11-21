@@ -1,4 +1,4 @@
-# Helpers for filenaming and log management
+ # Helpers for filenaming and log management
 
 scenario_key <- function(
   meta,
@@ -140,6 +140,7 @@ log_entry <- function(
   scenario,
   replicate_num,
   project_version,
+  seeds,
   status,
   state_file,
   sampled_files,
@@ -177,7 +178,13 @@ log_entry <- function(
     replicate_num = sprintf("%03d", as.integer(replicate_num)),
     run_date = run_date, 
     project_version = project_version,
-    master_seed = meta$master_seed, 
+    origin_seed = attributes(seeds)$origin,
+    seed_landscape = seeds$landscape,
+    seed_community = seeds$community,
+    seed_distribution = seeds$distribution,
+    seed_spin_up = seeds$spin_up,
+    seed_fragmentation = seeds$fragmentation,
+    seed_post_frag = seeds$post_frag,
     ac_amount = meta$ac_amount, 
     fragmentation = meta$fragmentation, 
     habitat = meta$habitat, 

@@ -13,6 +13,7 @@ library(scales)
 
 # Model source files
 source(here("Model/parameters.R"))
+source(here("Model/src/seeds.R"))
 source(here("Model/src/single_run.R"))
 source(here("Model/src/initialize.R"))
 source(here("Model/src/landscape.R"))
@@ -44,7 +45,7 @@ last_sim_id <- as.integer(args[3])
 # Paths
 log_file <- here("output", "simulations_log.csv")
 state_dir <- here("output", "model_states")
-sampled_dir <- here("output", "sampled_data")
+sampled_dir <- here("output", "sampled_data") 
 
 # Settings ---------------------------------------------------------------
 
@@ -86,6 +87,11 @@ notes <- NULL
 # If not, set spacer = 0. If yes, set spacer = number of simulations in the other array.
 spacer <- 0L
 
+# Project seed (for reproducibility)
+project_seed <- 42L
+# Keep this seed fixed for all simulations in the project. 
+# It is used to derive a unique master seed for each simulation.
+
 
 # Simulation -------------------------------------------------------------
 
@@ -98,12 +104,10 @@ if (to_log) {
   sim_id <- task_id
 }
 
-# To avoid overlapping seeds, for arrays it's best to override the master_seed from parameters.R
-# and use the job_id as root instead and increment it by the task_id. 
-# This way, the chance of overlapping seeds is very low, 
-# even when the number of arrays and simulations gets high.
-master_seed <- job_id %% 1000 + task_id
-# master seed == last 3 digits of job_id + task_id 
+# Set the origin seed from which all process seeds will be derived.
+# Since each simulation has a unique sim_id, we can derive a unique origin seed from the project seed and sim_id.
+origin_seed <- project_seed + sim_id
+seeds <- derive_seeds(origin = origin_seed)
 
 # Other parameters should be changed in parameters.R.
 # Make sure that the number of tasks in the array job matches the number of
@@ -154,7 +158,7 @@ results <- single_run(
   species_par = species_par,
   switch = switch,
   sim_id = sim_id,
-  seed = master_seed,
+  seeds = seeds,
   record_steps = steps_to_record
 )
 
@@ -200,7 +204,8 @@ for (method in names(sampling_methods)) {
       results[[step]],
       method = sampling_methods[[method]],
       n_samples = 30,
-      format = "long"
+      format = "long",
+      seed = seeds$sampling
     )
   }
 
@@ -239,7 +244,8 @@ if (to_log) {
     job_id = job_id, 
     scenario = scenario, 
     replicate_num = replicate_num,
-    project_version = "2.0",
+    project_version = "3.0",
+    seeds = seeds,
     status = "complete",
     state_file = state_file,
     sampled_files = sampled_files,

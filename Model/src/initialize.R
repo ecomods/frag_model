@@ -14,28 +14,29 @@ initialize <- function(
   k_inter,
   k_intra,
   niche_breadth = NULL,
+  seeds,
   species_specific = FALSE,
-  master_seed = NULL,
-  seed_landscape = NULL,
-  seed_distribution = NULL,
   state_type = c("core_state", "full_state")
 ) {
 
   state_type <- match.arg(state_type)
+  
+  if (is.null(seeds$landscape) || is.null(seeds$community) || is.null(seeds$distribution)) {
+    stop("Seeds for landscape, community, and distribution must be provided in the `seeds` list.")
+  }
 
-  if (!is.null(master_seed)) {
-    if (is.null(seed_landscape)) {
-      seed_landscape <- master_seed + 1
-    }
-    if (is.null(seed_distribution)) {
-      seed_distribution <- master_seed + 2
-    }
+  # For model-detached use
+  if (is.null(species_par) && !species_specific) {
+    species_par <- data.frame(
+      species_id = 1:n_species,
+      n_value = seq(from = 0, to = 1, length.out = n_species)
+    )
   }
 
   grid <- fbm_fft(
     gr_size = grid_size,
     ac_amount = ac_amount,
-    seed = seed_landscape
+    seed = seeds$landscape
   )
 
   cells <- list(
@@ -46,7 +47,7 @@ initialize <- function(
   agents_init <- generate_agents(
     n_species = n_species,
     n_pop = n_pop,
-    seed = seed_distribution
+    seed = seeds$community
   )
 
   agents <- distribute_agent(
@@ -57,6 +58,7 @@ initialize <- function(
     k_intra = k_intra,
     nb = niche_breadth,
     species_specific = species_specific,
+    seed = seeds$distribution
   )
 
   state_out <- record_step(
@@ -72,7 +74,7 @@ initialize <- function(
     meta <- build_meta(
       sim_id = NA,
       run_date = Sys.Date(),
-      master_seed = master_seed,
+      seeds = seeds,
       grid_size = grid_size,
       ac_amount = ac_amount,
       habitat = 1,

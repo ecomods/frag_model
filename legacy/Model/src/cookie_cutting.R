@@ -1,14 +1,15 @@
 cookie_cutting <- function(grid = grid,
                            agents = agents,
-                           agents_grid = agents_grid,
+                           # agents_grid = agents_grid,
                            habitat = mod_par$habitat_percent,
-                           fragmentation = mod_par$frag_factor) {
+                           fragmentation = mod_par$frag_factor,
+                           seed = seeds$fragmentation) {
 
   # frag_grid <- nlm_fbm(mod_par$grid_size, mod_par$grid_size, resolution = 1, fract_dim = 2 * (1 - fragmentation))
   frag_grid <- fbm_fft(gr_size = mod_par$grid_size, 
                        ac_amount = (1 - fragmentation), 
                        raster = T, 
-                       seed = seed_fragment)
+                       seed = seed)
 
   suppressWarnings(binary_grid <- landscapetools::util_binarize(frag_grid, habitat)) # Binarize fragmentation grid as only matrix/habitat values are needed
   binary_grid[binary_grid == 1] <- NA # Subset matrix to NA
@@ -34,8 +35,8 @@ cookie_cutting <- function(grid = grid,
   for (j in 1:nrow(agents)) {
     agents$patch_id[j] <- patch_matrix[agents$x_loc[j], agents$y_loc[j]]
   }
-  agents_grid[is.na(binary_grid)] <- NA
+  # agents_grid[is.na(binary_grid)] <- NA
 
-  return_list <- list(grid = binary_grid, agents = agents, agents_grid = agents_grid)
+  return_list <- list(grid = binary_grid, agents = agents)
   return(return_list)
 }

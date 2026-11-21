@@ -20,11 +20,11 @@ names(old_stack)
 gr_size <- 128
 ac_vals <- seq(0.01, 0.91, 0.10)
 resolution <- 1
-set.seed(42)
+seed <- 42L # same seed as used for the old function to ensure comparability
 
 new_stack <- raster::stack()
 for (ac_amount in ac_vals) {
-  new_ls <- fbm_fft(gr_size = gr_size, ac_amount = ac_amount, resolution = resolution)
+  new_ls <- fbm_fft(gr_size = gr_size, ac_amount = ac_amount, resolution = resolution, seed = seed)
   names(new_ls) <- paste0("fbm_fft_ac", ac_amount)
   new_stack <- raster::addLayer(new_stack, new_ls)
   rm(new_ls)

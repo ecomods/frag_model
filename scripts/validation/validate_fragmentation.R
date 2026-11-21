@@ -5,37 +5,41 @@ library(dplyr)
 library(purrr)
 library(viridis)
 source("Model/parameters.R")
+source("Model/src/seeds.R")
 source("Model/src/initialize.R")
 source("Model/src/landscape.R")
 source("Model/src/generate_agents.R")
 source("Model/src/distribute_agents.R")
+source("Model/src/record_state.R")
 
-source("Model/src/cookie_cutting.R")
+source("legacy/Model/src/cookie_cutting.R")
 source("Model/src/fragmentation.R")
 source("R/toroidal_clump.R")
 
 
 # 0. Setup ----------------------------------------------------------------
 
-set.seed(master_seed)
-
-# Example parameters:
-spatial_ac <- 0.7
-niche_breadth <- 0.1
-habitat_ratio <- 0.15
+seeds <- derive_seeds(origin = 42L, which = c("landscape", "community", "distribution", "fragmentation"))
 
 # Fragmentation levels
 frag_levels <- seq(0.1, 0.9, by = 0.1)
 
 # Initialize model with 100% habitat
 model_start <- initialize(
-  ac   = spatial_ac,
-  nb   = niche_breadth
+  grid_size = mod_par$grid_size,
+  ac_amount = mod_par$spatial_ac,
+  n_species = mod_par$n_species,
+  n_pop = mod_par$n_pop,
+  species_par = species_par,
+  k_inter = mod_par$k_inter,
+  k_intra = mod_par$k_intra,
+  niche_breadth = mod_par$niche_breadth,
+  seeds = seeds,
+  state_type = "full_state"
 )
 
 # extract simulation space, agents grid and agents list
 full_grid    <- model_start$grid
-agents_grid  <- model_start$agents_grid
 agents       <- model_start$agents
 
 # Visualise full habitat grid
@@ -58,15 +62,14 @@ for (i in seq_along(frag_levels)) {
   
   results$cookie_cutter[[i]] <- cookie_cutting(grid = full_grid, 
                                                agents = agents, 
-                                               agents_grid = agents_grid,
-                                               habitat = habitat_ratio, 
-                                               fragmentation = frag_levels[i])
+                                               habitat = mod_par$habitat_percent, 
+                                               fragmentation = frag_levels[i],
+                                               seed = seeds$fragmentation)
   
-  results$mask[[i]] <- fragment(grid = full_grid, 
-                                agents = agents, 
-                                agents_grid = agents_grid,
-                                habitat = habitat_ratio, 
-                                fragmentation = frag_levels[i])
+  results$mask[[i]] <- fragment(full_state = model_start, 
+                                habitat = mod_par$habitat_percent, 
+                                fragmentation = frag_levels[i],
+                                seed = seeds$fragmentation)
 }
 
 

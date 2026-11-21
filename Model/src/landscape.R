@@ -121,7 +121,8 @@ grf_fft <- function(
     seed = NULL,
     periodic = FALSE       # If TRUE, disables cropping/padding and keeps fully toroidal
 ) {
-  if(!is.null(seed)) set.seed(seed)
+
+  if (!is.null(seed)) withr::local_seed(seed = seed)
   corr_fun <- match.arg(corr_fun)
   
   # ------ 1. Padding and Grid Setup ------

@@ -25,7 +25,7 @@ build_meta <- function(
   out <- if (is.null(meta)) list() else meta
 
   required <- c(
-    "sim_id", "run_date", "master_seed", "grid_size",
+    "sim_id", "run_date", "seeds", "grid_size",
     "ac_amount", "habitat", "fragmentation", "niche_breadth", "edge_effect", 
     "dispersal_type", "dispersal_kernel", "dispersal_ratio", "dispersal_dist"
   )

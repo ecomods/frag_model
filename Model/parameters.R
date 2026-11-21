@@ -4,17 +4,14 @@
 #
 ################################################################################
 
-# choose a random seed constant for the simulation or set the seed manually
-# seed <- round(runif(1,1,9999))
-master_seed <- 42L
-
 # Switches
 switch <- data.frame(
-  # animation_export = 0, # determine whether plots from each time-step are exported for later animation. 0 = no, 1 = yes (keep OFF when running on cluster!)
-  random_init = 0, # determine whether set.seed is used for the spin up phase. 0 = random, 1 = deterministic
-  random_landscape = 1, # determine whether set.seed is used for landscape generation. 0 = random, 1 = non-random
-  random_post_frag = 1, # determine whether set.seed is used for fragmenting landscape. 0 = random, 1 = non-random
-  random_community = 1, # determine whether to introduce randomness in species distribution. 0 = random, 1 = non-random
+  # Stochasticity switches (legacy, superseded by derive_seeds() function)
+  # random_init = 0, # determine whether set.seed is used for the spin up phase. 0 = random, 1 = deterministic
+  # random_landscape = 0, # determine whether a fixed seed is used for landscape generation. 0 =  random, 1 = non-random
+  # random_post_frag = 1, # determine whether set.seed is used for fragmenting landscape. 0 = random, 1 = non-random
+  # random_community = 1, # determine whether to introduce randomness in species distribution. 0 = random, 1 = non-random
+
   # sample_all = 0, # number of samples according to sample parameter or sample all possible cells. 0 = parameter, 1 = all
   
   ############
@@ -59,7 +56,6 @@ n_values <- seq(from = 0, to = 1, length.out = mod_par$n_species)
 
 # creating species specific parameters instead of the static ones. This can be
 # overridden with a switch
-
 if (switch$species_specific_par == 2) {
   species_par <- data.frame(
     species_id = 1:mod_par$n_species,
@@ -96,7 +92,7 @@ if (switch$species_specific_par == 2) {
 
 # switches for var par to determine which parameters are constant and which aren't.
 # if switch is on (2) the sequence of values will be used;
-# if switch is on (1) 3 values will be used (low, medium, high);
+# if switch is on (1) 3 preset values will be used (low, medium, high);
 # off (0) will mean a fixed value (from mod_par) will be used for all runs.
 
 vp_switch <- data.frame(
@@ -106,7 +102,7 @@ vp_switch <- data.frame(
   nb = 0,
   disp = 0,
   disp_dist = 0,
-  edge = 0
+  edge = 0 # note that edge effects are only relevant when the edge effect switch is on in the main switches
 )
 # Creating a table of varying parameter values using expand.grid() for the multiple runs function.
 # Only fragmentation, auto-correlation, and habitat percent are adjustable and will override the settings of 'par'.
