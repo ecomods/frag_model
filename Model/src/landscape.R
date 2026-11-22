@@ -48,14 +48,20 @@ fbm_fft <- function(
     raster = TRUE,
     rescale = TRUE
 ) {
-  
+
   # Input validation
   checkmate::assert_count(gr_size, positive = TRUE)
   checkmate::assert_numeric(resolution)
   checkmate::assert_numeric(ac_amount)
   checkmate::assert_true(ac_amount >= 0)
   checkmate::assert_true(ac_amount <= 1)
-  checkmate::assert_logical(rescale)  
+  checkmate::assert_logical(rescale)
+
+  if (!is.null(seed)) {
+    checkmate::assert_count(seed, positive = TRUE)
+  } else {
+    seed <- sample.int(.Machine$integer.max, 1L)
+  }
   
   N <- gr_size
   
@@ -95,9 +101,10 @@ fbm_fft <- function(
       nrow(rast) * resolution
     )
     raster::res(rast) <- resolution 
-    
+    attr(rast, "seed") <- seed
     return(rast)
   } else {
+    attr(field, "seed") <- seed
     return(field)
   }
 }
