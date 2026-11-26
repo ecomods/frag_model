@@ -11,32 +11,23 @@ library(collapse)
 library(checkmate)
 library(withr)
 library(scales)
+library(purrr)
 
 # Model source files
 source(here("Model/parameters.R"))
-source(here("Model/src/seeds.R"))
-source(here("Model/src/single_run.R"))
-source(here("Model/src/initialize.R"))
-source(here("Model/src/landscape.R"))
-source(here("Model/src/generate_agents.R"))
-source(here("Model/src/distribute_agents.R"))
-source(here("Model/src/record_state.R"))
-source(here("Model/src/run_model_step.R"))
-source(here("Model/src/birth.R"))
-source(here("Model/src/death.R"))
-source(here("Model/src/disperse.R"))
-source(here("Model/src/immigration.R"))
-source(here("Model/src/fragmentation.R"))
-source(here("Model/src/registry.R"))
+list.files(here("Model/src"), full.names = TRUE) %>%
+  walk(source)
 
 # Sampling source files
 source(here("R/toroidal_clump.R"))
 source(here("R/sample_cells.R"))
 
 # Paths
-log_file <- "output/simulations_log.csv"
-state_dir <- "output/model_states"
-sampled_dir <- "output/sampled_data"
+log_file <- here("output/simulations_log.csv")
+state_dir <- here("output/model_states")
+dir.create(state_dir, showWarnings = FALSE)
+sampled_dir <- here("output/sampled_data")
+dir.create(sampled_dir, showWarnings = FALSE)
 
 # Notes (any additional information to be printed to the console output)
 notes <- NULL
@@ -64,8 +55,15 @@ export_states <- FALSE
 sampling_methods <- list(
   # all = "all", 
   # cb = "checkerboard", 
-  # rand = "random"
+  # rand = "random",
+  fixed = "fixed"
 )
+# For "random" and "fixed" sampling methods, specify the number of cells to sample.
+n_samples <- 30
+# Note that since sampling is seeded, method "random" draws the same set of cells 
+# for steps sharing the same habitat configuration (e.g. post_fragmentation and final), 
+# but not for steps with different habitat configurations (e.g. pre_fragmentation and post_fragmentation).
+# If you want to ensure that the same cells are sampled for all steps, use method "fixed" instead.
 
 # Should the simulations be logged? 
 # If yes, set to_log = TRUE. 
@@ -134,7 +132,7 @@ for (i in seq_len(n_sims)) {
   replicate_num <- rep_number(meta = meta, log_file = log_file)
   filename <- sim_filename(sim_id, scenario, replicate_num)
   
-  cat("\nSimulation completed.\n\n ")
+  cat("\nSimulation completed.\n\n")
   if (export_states) {
     # We can now save all recorded steps into a single RDS file
     state_file <- paste0(state_dir, "/", filename, ".rds")
@@ -156,6 +154,16 @@ for (i in seq_len(n_sims)) {
   recorded_steps <- names(results)
   sampled_files <- character()
   
+  # If "fixed" sampling method is selected, we need to define a fixed subset of cells.
+  if ("fixed" %in% sampling_methods) {
+    # Draw n_samples cells from the last recorded, which will be used for all recorded steps.
+    samp_cells <- habitat_cells(results[[length(results)]], n_samples, seed = seeds$sampling)
+  }
+  # sample_cells will use the seed attribute of samp_cells for the seed_sampling
+  # column in the output, so we don't need to manually add it.
+  # We can ensure that the seed attribute is correctly set:
+  stopifnot(identical(attr(samp_cells, "seed"), seeds$sampling))
+
   # For each selected sampling method we will create a single CSV file 
   # with the sampled data from all recorded steps.
   for (method in names(sampling_methods)) {
@@ -168,7 +176,8 @@ for (i in seq_len(n_sims)) {
       sampled[[step]] <- sample_cells(
         results[[step]],
         method = sampling_methods[[method]],
-        n_samples = 30, # remember to specify if using random sampling
+        n_samples = if (method == "rand") n_samples else NULL,
+        cell_ids = if (method == "fixed") samp_cells else NULL,
         format = "long",
         seed = seeds$sampling
       )
